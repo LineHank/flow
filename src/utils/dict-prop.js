@@ -1,6 +1,6 @@
 /**
  * 字典属性常量
- * @author luolin
+ * @author howe
  */
 export let DIC_PROP = {
   isNeedService: false,

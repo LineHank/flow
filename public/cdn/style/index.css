@@ -7,50 +7,58 @@ body,
 }
 
 .howe-home {
-  background-color: #303133;
+  position: relative;
+  background: linear-gradient(135deg, #1a1d24 0%, #2d3238 100%);
   height: 100%;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .howe-home__main {
   user-select: none;
-  width: 100%;
-  flex-grow: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-}
-
-.howe-home__footer {
-  width: 100%;
-  flex-grow: 0;
   text-align: center;
-  padding: 1em 0;
+  padding: 2rem;
 }
 
-.howe-home__footer > a {
-  font-size: 12px;
-  color: #ABABAB;
-  text-decoration: none;
+.howe-home__loader {
+  margin-bottom: 1.5rem;
 }
 
-.howe-home__loading {
-  height: 32px;
-  width: 32px;
-  margin-bottom: 20px;
+.howe-home__spinner {
+  width: 48px;
+  height: 48px;
+  opacity: 0.9;
 }
 
 .howe-home__title {
-  color: #FFF;
-  font-size: 14px;
-  margin-bottom: 10px;
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin: 0 0 0.5rem;
+  letter-spacing: 0.02em;
 }
 
-.howe-home__sub-title {
-  color: #ABABAB;
-  font-size: 12px;
+.howe-home__subtitle {
+  color: #9ca3af;
+  font-size: 0.875rem;
+  margin: 0;
+  font-weight: 400;
+}
+
+.howe-home__footer {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+
+.howe-home__footer span {
+  font-size: 0.75rem;
+  color: #6b7280;
 }
 
 .howe-tree__content {
