@@ -1,5 +1,5 @@
 # Dify流程图仿制
-
+image.png
 # 画布右键菜单配置说明 
 
 本文档说明 `flow-config.js` 中 `contextMenu.container.menulists`（第 190-256 行）的作用，即画布空白处右键时弹出的菜单项及其功能。
