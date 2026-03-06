@@ -1,0 +1,69 @@
+@import './icon-fix.less';
+
+@primary-color: #0960bd;
+
+.container {
+  height: 100%;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  -o-user-select: none;
+  user-select: none;
+}
+
+.header-option {
+  background: #fff;
+  height: 46px!important;
+  line-height: 36px;
+  padding: 0 10px!important;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 3px 5px #ddd;
+  position: relative;
+  z-index: 1000;
+  &__tools {
+    span {
+      margin-right: 6px;
+    }
+  }
+
+  /*拖拽/连线按钮*/
+  .ant-btn-sm {
+    padding: 8px !important;
+    min-width: 32px;
+    border-radius: 4px;
+  }
+}
+
+.header-option-button {
+  border: 0!important;
+  padding: 8px 8px!important;
+}
+
+.content {
+  background: #fafafa;
+  height: 100%;
+  border: 1px dashed rgba(170, 170, 170, 0.7);
+  padding: 0!important;
+}
+
+.tag {
+  margin: 6px;
+}
+
+.link-label {
+  background-color: white;
+  padding: 1px;
+  border: 1px solid #346789;
+  border-radius: 5px;
+  opacity: 0.8;
+  z-index: 3;
+}
+
+.flow-drawer {
+  /*抽屉内容靠上*/
+  .ant-drawer-header {
+    margin-bottom: 0!important;
+  }
+}

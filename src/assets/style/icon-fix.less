@@ -1,0 +1,50 @@
+/**
+ * 图标对齐与样式修复
+ * 解决 ant-design-vue 图标漂移、错位问题
+ */
+
+/* 全局图标对齐 - 修复 vertical-align 导致的漂移 */
+.anticon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle !important;
+  line-height: 1 !important;
+  font-style: normal !important;
+}
+
+/* 按钮内图标居中 */
+.ant-btn .anticon {
+  font-size: 14px;
+  margin-right: 0;
+}
+
+/* 仅图标按钮 - 确保图标完全居中 */
+.ant-btn:not(.ant-btn-lg):not(.ant-btn-sm) .anticon {
+  font-size: 16px;
+}
+
+.ant-btn-sm .anticon {
+  font-size: 12px;
+}
+
+/* 圆形按钮图标 */
+.ant-btn-circle .anticon {
+  margin: 0;
+}
+
+/* 左侧菜单节点图标 - 32x32 容器内居中 */
+.node-item .anticon {
+  font-size: 16px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100%;
+  height: 100%;
+}
+
+/* 顶部工具栏按钮图标 */
+.header-option-button .anticon {
+  font-size: 14px;
+  margin: 0;
+}

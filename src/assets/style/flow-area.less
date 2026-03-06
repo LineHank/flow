@@ -1,0 +1,181 @@
+@active-color: #409EFF;
+
+.btn-wrapper-simple {
+  height: 24px !important;
+  line-height: 24px !important;
+}
+
+.vue-contextmenu-listWrapper {
+  padding: 6px 0 !important;
+  border-radius: 20px !important;
+  background: #1f1f1f !important;
+  color: #fff !important;
+  .context-menu-list {
+    margin: 0 8px !important;
+    padding: 0 !important;
+    min-height: 32px !important;
+    line-height: 32px !important;
+    background: transparent !important;
+    color: #fff !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  .context-menu-list:hover {
+    background: #409EFF !important;
+    color: #fff !important;
+  }
+  /* 统一菜单项内边距和尺寸 - 流程图信息、添加节点、对齐方式同等大小和间距 */
+  .no-child-btn,
+  .has-child .parent-name {
+    min-height: 32px !important;
+    height: 32px !important;
+    line-height: 32px !important;
+    padding: 0 12px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  /* 添加节点、对齐方式前面不留空 - 隐藏左侧图标占位 */
+  .has-child .nav-icon-fontawe {
+    display: none !important;
+  }
+  .has-child .nav-name-right {
+    margin-left: 0 !important;
+  }
+  .context-menu-list .btn-wrapper-simple {
+    height: 32px !important;
+    line-height: 32px !important;
+  }
+  .nav-name-right {
+    margin: 0 8px !important;
+  }
+  /* 添加节点、对齐方式等右侧箭头图标改为白色 */
+  .parent-name .icon {
+    border-left-color: #fff !important;
+  }
+}
+
+/* 子菜单样式 - 与主菜单一致，避免白屏 */
+.child-ul-wrapper {
+  padding-left: 1px !important;
+  background: #1f1f1f !important;
+  color: #fff !important;
+  border: 1px solid #444 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+  .child-li-wrapper,
+  .context-menu-list {
+    background: transparent !important;
+    color: #fff !important;
+  }
+  .child-li-wrapper:hover,
+  .context-menu-list:hover {
+    background: #409EFF !important;
+    color: #fff !important;
+  }
+  .has-child,
+  .no-child-btn {
+    color: #fff !important;
+  }
+  .nav-name-right {
+    color: inherit !important;
+  }
+  .icon {
+    border-left-color: #fff !important;
+  }
+}
+
+.flow-container {
+  width: 3000px;
+  height: 3000px;
+  position: relative;
+  transition: transform 0.5s ease 0s, transform-origin 0.5s ease 0s;
+
+  &.grid {
+    background: url(~@/assets/images/grid-bg.jpg) repeat left top;
+    background-size: 60px 60px;
+  }
+
+  &.canScale {
+    cursor: url(~@/assets/images/search.png), default;
+  }
+
+  &.canDrag {
+    cursor: grab;
+  }
+
+  &.canMultiple {
+    cursor: url(~@/assets/images/multip-pointer.png), default;
+  }
+}
+
+.rectangle-multiple {
+  position: absolute;
+  border: 1px dashed #31676f;
+}
+
+.flow-container-active {
+  background-color: #e4e4e4;
+  cursor: crosshair;
+}
+
+.auxiliary-line-x {
+  position: absolute;
+  border: 0.5px solid @active-color;
+  width: 100%;
+  z-index: 9999;
+}
+
+.auxiliary-line-y {
+  position: absolute;
+  border: 0.5px solid @active-color;
+  height: 100%;
+  z-index: 9999;
+}
+
+.link-active {
+  outline: 2px dashed @active-color;
+}
+
+.container-scale {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+
+  > span {
+    display: inline-block;
+    width: 40px;
+    text-align: center;
+    font-size: 14px;
+    color: rgba(0, 0, 0, .65);
+  }
+
+  /*缩放按钮*/
+  .ant-btn-circle.ant-btn-sm {
+    padding: 5px !important;
+    min-width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    .anticon {
+      margin: 0 !important;
+      font-size: 12px;
+    }
+  }
+}
+
+/*自适应底部*/
+.mouse-position {
+  position: fixed;
+  bottom: 0;
+  right: 10px;
+}
+
+.common-remarks {
+  width: 100px;
+  height: 150px;
+  position: absolute;
+  background-color: #ffffaa;
+}
