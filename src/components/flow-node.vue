@@ -253,8 +253,8 @@
       },
       // 节点右键
       showNodeContextMenu(e) {
-        this.$emit('showNodeContextMenu', e)
         this.selectNode()
+        this.$emit('showNodeContextMenu', e, this.node)
       },
       // 节点是否激活
       isActive() {

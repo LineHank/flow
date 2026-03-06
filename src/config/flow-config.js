@@ -220,36 +220,32 @@ export let flowConfig = {
           icoName: 'plus',
           btnName: '添加节点',
           children: [
-            {
-              icoName: 'edit',
-              btnName: '基础',
-              children: [
-                { fnHandler: 'addNodeStart', icoName: 'play-circle', btnName: '开始' },
-                { fnHandler: 'addNodeOrdinary', icoName: 'right', btnName: '普通节点' },
-                { fnHandler: 'addNodeApproval', icoName: 'form', btnName: '审批节点' },
-                { fnHandler: 'addNodeApi', icoName: 'api', btnName: 'API节点' },
-                { fnHandler: 'addNodeDispatch', icoName: 'apartment', btnName: '分派节点' },
-                { fnHandler: 'addNodeConfirmation', icoName: 'check-circle', btnName: '确认节点' },
-                { fnHandler: 'addNodeEnd', icoName: 'minus-circle', btnName: '结束' }
-              ]
-            },
-            {
-              icoName: 'edit',
-              btnName: '高级',
-              children: [
-                { fnHandler: 'addNodeVirtual', icoName: 'reload', btnName: '虚拟节点' },
-                { fnHandler: 'addNodeJob', icoName: 'check', btnName: '节点任务' },
-                { fnHandler: 'addNodeChildFlow', icoName: 'setting', btnName: '子流程' }
-              ]
-            },
-            {
-              icoName: 'edit',
-              btnName: '泳道',
-              children: [
-                { fnHandler: 'addNodeXLane', icoName: 'border-horizontal', btnName: '横向泳道' },
-                { fnHandler: 'addNodeYLane', icoName: 'border-vertical', btnName: '纵向泳道' }
-              ]
-            }
+            // { fnHandler: 'addNodeStart', icoName: 'play-circle', btnName: '开始' },
+            { fnHandler: 'addNodeOrdinary', icoName: 'right', btnName: '普通节点' },
+            { fnHandler: 'addNodeApproval', icoName: 'form', btnName: '审批节点' },
+            { fnHandler: 'addNodeApi', icoName: 'api', btnName: 'API节点' },
+            { fnHandler: 'addNodeDispatch', icoName: 'apartment', btnName: '分派节点' },
+            { fnHandler: 'addNodeConfirmation', icoName: 'check-circle', btnName: '确认节点' },
+            // { fnHandler: 'addNodeEnd', icoName: 'minus-circle', btnName: '结束' }
+            // 高级暂时隐藏
+            // {
+            //   icoName: 'edit',
+            //   btnName: '高级',
+            //   children: [
+            //     { fnHandler: 'addNodeVirtual', icoName: 'reload', btnName: '虚拟节点' },
+            //     { fnHandler: 'addNodeJob', icoName: 'check', btnName: '节点任务' },
+            //     { fnHandler: 'addNodeChildFlow', icoName: 'setting', btnName: '子流程' }
+            //   ]
+            // },
+            // 泳道暂时隐藏
+            // {
+            //   icoName: 'edit',
+            //   btnName: '泳道',
+            //   children: [
+            //     { fnHandler: 'addNodeXLane', icoName: 'border-horizontal', btnName: '横向泳道' },
+            //     { fnHandler: 'addNodeYLane', icoName: 'border-vertical', btnName: '纵向泳道' }
+            //   ]
+            // }
           ]
         },
         {

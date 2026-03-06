@@ -41,7 +41,7 @@
         :select.sync="currentSelect"
         :selectGroup.sync="currentSelectGroup"
         :currentTool="currentTool"
-        @showNodeContextMenu="showNodeContextMenu"
+        @showNodeContextMenu="showNodeContextMenu($event, node)"
         :rectangleMultiple="rectangleMultiple"
         @updateNodePos="updateNodePos"
         @alignForLine="alignForLine"
@@ -190,6 +190,7 @@
         },
         containerContextMenuData: flowConfig.contextMenu.container,
         nodeContextMenuData: flowConfig.contextMenu.node,
+        nodeMenuListsFull: deepClone(flowConfig.contextMenu.node.menulists),
         // 当前聚焦的连接线ID
         tempLinkId: "",
         // 剪切板内容
@@ -380,7 +381,7 @@
         }
       },
       // 节点右键
-      showNodeContextMenu(e) {
+      showNodeContextMenu(e, node) {
         let event = window.event || e;
 
         event.preventDefault();
@@ -391,6 +392,10 @@
         let x = event.clientX;
         let y = event.clientY;
         this.nodeContextMenuData.axis = {x, y};
+        const isStartOrEnd = node && (node.type === CommonNodeType.START || node.type === CommonNodeType.END);
+        this.nodeContextMenuData.menulists = isStartOrEnd
+          ? this.nodeMenuListsFull.filter(item => item.fnHandler !== 'copyNode' && item.fnHandler !== 'deleteNode')
+          : this.nodeMenuListsFull;
       },
       previewFlow() {
         this.$emit('previewFlow');
