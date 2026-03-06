@@ -2,101 +2,6 @@
   <div style="height: 100%;">
     <a-layout class="container">
       <a-layout>
-        <a-layout-header class="header-option">
-          <div class="header-option__tools">
-            <span v-for="tool in field.tools" :key="tool.type">
-              <a-tooltip :title="tool.name" placement="right">
-                <a-button
-                  size="small"
-                  :type="currentTool.type === tool.type ? 'primary' : 'default'"
-                  @click="selectTool(tool.type)"
-                >
-                  <a-icon :type="tool.icon" />
-                </a-button>
-              </a-tooltip>
-            </span>
-          </div>
-          <div class="header-option__buttons">
-            <a-tooltip title="预览" placement="bottom">
-              <a-button
-                @click="previewFlow"
-                class="header-option-button"
-              >
-                <a-icon type="eye" />
-              </a-button>
-            </a-tooltip>
-            <a-tooltip title="发布" placement="bottom">
-              <a-button
-                @click="publishFlow"
-                class="header-option-button"
-              >
-                <a-icon type="send" />
-              </a-button>
-            </a-tooltip>
-            <a-tooltip title="重新绘制" placement="bottom">
-              <a-popconfirm
-                title="是否确认重新绘制?"
-                @confirm="clear"
-              >
-                <a-button
-                  class="header-option-button"
-                >
-                  <a-icon type="delete" />
-                </a-button>
-              </a-popconfirm>
-            </a-tooltip>
-            <a-tooltip :title="gridConfig.showGridText" placement="bottom">
-              <a-button
-                @click="toggleShowGrid"
-                class="header-option-button"
-              >
-                <a-icon :type="gridConfig.showGridIcon" />
-              </a-button>
-            </a-tooltip>
-            <a-tooltip title="设置" placement="bottom">
-              <a-button
-                @click="setting"
-                class="header-option-button"
-              >
-                <a-icon type="setting" />
-              </a-button>
-            </a-tooltip>
-            <a-tooltip title="查看" placement="bottom">
-              <a-button
-                @click="openViewJson"
-                class="header-option-button"
-              >
-                <a-icon type="search" />
-              </a-button>
-            </a-tooltip>
-            <a-tooltip title="退出" placement="bottom">
-              <a-button
-                @click="exitFlow"
-                class="header-option-button"
-              >
-                <a-icon type="close" />
-              </a-button>
-            </a-tooltip>
-            <a-tooltip title="查看快捷键或文档" placement="bottom">
-              <a-popconfirm
-                title="快速入门："
-                placement="bottom"
-                okText="使用文档"
-                cancelText="快捷键"
-                @confirm="usingDoc"
-                @cancel="shortcutHelper"
-              >
-                <a-button
-                  style="color: #409EFF;font-size: 12px"
-                  class="header-option-button"
-                >
-                  <a-icon type="question-circle" />
-                  快速入门
-                </a-button>
-              </a-popconfirm>
-            </a-tooltip>
-          </div>
-        </a-layout-header>
         <a-layout-content class="content">
           <flow-area
             ref="flowArea"
@@ -111,6 +16,11 @@
             @selectTool="selectTool"
             @getShortcut="getShortcut"
             @publishFlow="publishFlow"
+            @previewFlow="previewFlow"
+            @toggleShowGrid="toggleShowGrid"
+            @openViewJson="openViewJson"
+            @clear="clearWithConfirm"
+            @shortcutHelper="shortcutHelper"
             @showAttrConfig="showAttrConfig"
             @upOrDownNodeJobs="upOrDownNodeJobs"
           >
@@ -158,8 +68,6 @@
         <a-button type="primary" @click="upLoadFlowPicture">上传到服务器</a-button>
       </template>
     </a-modal>
-    <!-- 设置 -->
-    <setting-modal ref="settingModal"></setting-modal>
     <!-- 快捷键 -->
     <shortcut-modal ref="shortcutModal"></shortcut-modal>
     <!-- 查看数据 -->
@@ -176,12 +84,81 @@
   import {deepClone, utils, getBrowserType} from "@/utils/common";
   import FlowArea from "../components/flow-area";
   import FlowAttr from "../components/flow-attr";
-  import SettingModal from "./setting";
   import ShortcutModal from "./shortcut";
   import JsonModal from "./json-view";
   import {ToolsType, LaneNodeType, CommonNodeType, HighNodeType} from "@/config/type";
   import * as defFlow from '@/api/flow'
   import {setStore} from "@/utils/store";
+
+  const DEFAULT_FLOW_DATA = {
+    nodeList: [
+      {
+        type: "start",
+        nodeName: "开始",
+        icon: null,
+        attrs: { pcTodoUrl: null, pcFinishUrl: null, timeout: 0, sort: 1, isValid: "1" },
+        clazz: { clazz: null, methods: null, dynamicType: null, roleId: null, userKey: null, remark: null, sort: 1 },
+        defJob: { jobName: "任务名称", userId: null, roleId: null, jobType: "0", userKey: null, dynamicType: "0", distUserKey: null, distDynType: null, isNowCall: "0", isNowRun: "0", timeout: 0, sort: 1, isSkip: "0", isValid: "1" },
+        jobSize: 1,
+        id: "1772794155207000002",
+        x: 75,
+        y: 85,
+        width: 50,
+        height: 50
+      },
+      {
+        type: "ordinary",
+        nodeName: "提单节点",
+        icon: null,
+        attrs: { pcTodoUrl: null, pcFinishUrl: null, timeout: 0, sort: 1, isValid: "1", isWaitSibling: "1", isAutoNext: "1", rejectType: "0", isContinue: "0" },
+        clazz: { clazz: null, methods: null, dynamicType: null, roleId: null, userKey: null, remark: null, sort: 1 },
+        defJob: { jobName: "任务名称", userId: null, roleId: null, jobType: "0", userKey: null, dynamicType: "0", distUserKey: null, distDynType: null, isNowCall: "0", isNowRun: "0", timeout: 0, sort: 1, isSkip: "0", isValid: "1" },
+        jobSize: 1,
+        status: null,
+        id: "1772794155207000003",
+        x: 45,
+        y: 140,
+        width: 120,
+        height: 50
+      },
+      {
+        type: "ordinary",
+        nodeName: "确认节点",
+        icon: null,
+        attrs: { pcTodoUrl: null, pcFinishUrl: null, timeout: 0, sort: 1, isValid: "1", isWaitSibling: "1", isAutoNext: "1", rejectType: "0", isContinue: "0" },
+        clazz: { clazz: null, methods: null, dynamicType: null, roleId: null, userKey: null, remark: null, sort: 1 },
+        defJob: { jobName: "任务名称", userId: null, roleId: null, jobType: "0", userKey: null, dynamicType: "0", distUserKey: null, distDynType: null, isNowCall: "0", isNowRun: "0", timeout: 0, sort: 1, isSkip: "0", isValid: "1" },
+        jobSize: 1,
+        status: null,
+        id: "1772794155207000004",
+        x: 45,
+        y: 200,
+        width: 120,
+        height: 50
+      },
+      {
+        type: "end",
+        nodeName: "结束",
+        icon: null,
+        attrs: { pcTodoUrl: null, pcFinishUrl: null, timeout: 0, sort: 1, isValid: "1", isAutoEnd: "0" },
+        clazz: { clazz: null, methods: null, dynamicType: null, roleId: null, userKey: null, remark: null, sort: 1 },
+        defJob: { jobName: "任务名称", userId: null, roleId: null, jobType: "0", userKey: null, dynamicType: "0", distUserKey: null, distDynType: null, isNowCall: "0", isNowRun: "0", timeout: 0, sort: 1, isSkip: "0", isValid: "1" },
+        jobSize: 1,
+        id: "1772794155207000005",
+        x: 75,
+        y: 260,
+        width: 50,
+        height: 50
+      }
+    ],
+    linkList: [
+      { type: "link", label: "", sourceId: "1772794155207000002", targetId: "1772794155207000003", attrs: { varKey: null, varVal: null, valType: "1", operator: "1", operatorType: "0", isValid: "1", connectorType: "Straight", stroke: "#2a2929", strokeWidth: 1 }, id: "1772794155231000006", icon: null },
+      { type: "link", label: "", sourceId: "1772794155207000003", targetId: "1772794155207000004", attrs: { varKey: null, varVal: null, valType: "1", operator: "1", operatorType: "0", isValid: "1", connectorType: "Straight", stroke: "#2a2929", strokeWidth: 1 }, id: "1772794155234000007", icon: null },
+      { type: "link", label: "", sourceId: "1772794155207000004", targetId: "1772794155207000005", attrs: { varKey: null, varVal: null, valType: "1", operator: "1", operatorType: "0", isValid: "1", connectorType: "Straight", stroke: "#2a2929", strokeWidth: 1 }, id: "1772794155236000008", icon: null }
+    ],
+    attrs: { id: "1772794155207000001", flowName: null, flowKey: null, photo: null, isValid: "1", remark: null, sort: 1 },
+    status: "2"
+  };
 
   export default {
     name: "flowDesign",
@@ -191,7 +168,6 @@
       canvg,
       FlowArea,
       FlowAttr,
-      SettingModal,
       ShortcutModal,
       JsonModal
     },
@@ -308,6 +284,7 @@
             _this.currentSelect = _this.flowData.linkList.filter(
               l => l.id === id
             )[0];
+            _this.showAttrConfig(true);
           });
 
           element.addEventListener("dblclick", e => {
@@ -370,9 +347,6 @@
           if (event.ctrlKey) {
             if (event.altKey) {
               switch (key) {
-                case flowConfig.shortcut.settingModal.code:
-                  this.setting();
-                  break;
                 case flowConfig.shortcut.jsonModal.code:
                   this.openViewJson();
                   break;
@@ -408,7 +382,9 @@
       // 初始化流程图
       initFlow() {
         if (this.flowData.status === flowConfig.flowStatus.CREATE) {
-          this.flowData.attrs.id = utils.getId();
+          const defaultData = deepClone(DEFAULT_FLOW_DATA);
+          defaultData.attrs.id = utils.getId();
+          this.loadFlow(JSON.stringify(defaultData));
         } else {
           this.loadFlow();
         }
@@ -429,12 +405,20 @@
             this.$nextTick(() => {
               linkList.forEach(link => {
                 this.flowData.linkList.push(link);
+                const connectorType = (link.attrs && link.attrs.connectorType) || 'Flowchart';
+                const connector = (connectorType === 'Flowchart' || connectorType === 'StateMachine')
+                  ? [connectorType, { gap: 5, cornerRadius: 8, alwaysRespectStubs: true }]
+                  : connectorType;
+                const paintStyle = {
+                  stroke: (link.attrs && link.attrs.stroke) || flowConfig.jsPlumbInsConfig.PaintStyle.stroke,
+                  strokeWidth: (link.attrs && link.attrs.strokeWidth != null) ? link.attrs.strokeWidth : flowConfig.jsPlumbInsConfig.PaintStyle.strokeWidth
+                };
                 let conn = this.plumb.connect({
                   source: link.sourceId,
                   target: link.targetId,
-                  connector: flowConfig.jsPlumbInsConfig.Connector,
+                  connector,
                   anchor: flowConfig.jsPlumbConfig.anchor.default,
-                  paintStyle: flowConfig.jsPlumbInsConfig.PaintStyle
+                  paintStyle
                 });
                 let link_id = conn.canvas.id;
                 let labelHandle = e => {
@@ -443,6 +427,7 @@
                   this.currentSelect = this.flowData.linkList.filter(
                     l => l.id === link_id
                   )[0];
+                  this.showAttrConfig(true);
                 };
 
                 if (link.label !== "") {
@@ -689,6 +674,12 @@
           maxY: maxY
         };
       },
+      clearWithConfirm() {
+        this.$confirm({
+          title: '是否确认重新绘制?',
+          onOk: () => this.clear()
+        });
+      },
       // 清除画布
       clear() {
         this.flowData.nodeList.forEach(node => {
@@ -713,17 +704,9 @@
           this.gridConfig.showGridIcon = "aim";
         }
       },
-      // 设置
-      setting() {
-        this.$refs.settingModal.open();
-      },
       // 快捷键
       shortcutHelper() {
         this.$refs.shortcutModal.open();
-      },
-      // 使用文档
-      usingDoc() {
-        window.open("http://1.15.77.119:9000/");
       },
       // 退出流程设计
       exitFlow() {
@@ -774,7 +757,7 @@
       upOrDownNodeJobs(sourceId, targetId, isUp) {
         let source = this.flowData.nodeList.find(f => f.id === sourceId);
         let target = this.flowData.nodeList.find(f => f.id === targetId);
-        let bool = source.type === CommonNodeType.SERIAL || source.type === CommonNodeType.PARALLEL;
+        let bool = [CommonNodeType.ORDINARY, CommonNodeType.APPROVAL, CommonNodeType.API, CommonNodeType.DISPATCH, CommonNodeType.CONFIRMATION].indexOf(source.type) !== -1;
         if (bool && target.type === HighNodeType.JOB) {
           if (isUp) {
             // 计算源节点任务个数

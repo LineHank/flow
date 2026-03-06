@@ -75,9 +75,16 @@
     <vue-context-menu
       :contextMenuData="containerContextMenuData"
       @flowInfo="flowInfo"
+      @previewFlow="previewFlow"
+      @selectToolDrag="selectToolDrag"
+      @selectToolConnection="selectToolConnection"
+      @toggleShowGrid="toggleShowGrid"
+      @openViewJson="openViewJson"
+      @clear="clear"
       @paste="paste"
       @selectAll="selectAll"
       @publishFlow="publishFlow"
+      @shortcutHelper="shortcutHelper"
       @verticaLeft="verticaLeft"
       @verticalCenter="verticalCenter"
       @verticalRight="verticalRight"
@@ -85,8 +92,11 @@
       @levelCenter="levelCenter"
       @levelDown="levelDown"
       @addNodeStart="() => addNodeByType('commonNodes', 'start')"
-      @addNodeSerial="() => addNodeByType('commonNodes', 'serial')"
-      @addNodeParallel="() => addNodeByType('commonNodes', 'parallel')"
+      @addNodeOrdinary="() => addNodeByType('commonNodes', 'ordinary')"
+      @addNodeApproval="() => addNodeByType('commonNodes', 'approval')"
+      @addNodeApi="() => addNodeByType('commonNodes', 'api')"
+      @addNodeDispatch="() => addNodeByType('commonNodes', 'dispatch')"
+      @addNodeConfirmation="() => addNodeByType('commonNodes', 'confirmation')"
       @addNodeEnd="() => addNodeByType('commonNodes', 'end')"
       @addNodeVirtual="() => addNodeByType('highNodes', 'virtual')"
       @addNodeJob="() => addNodeByType('highNodes', 'job')"
@@ -381,6 +391,27 @@
         let x = event.clientX;
         let y = event.clientY;
         this.nodeContextMenuData.axis = {x, y};
+      },
+      previewFlow() {
+        this.$emit('previewFlow');
+      },
+      selectToolDrag() {
+        this.$emit('selectTool', ToolsType.DRAG);
+      },
+      selectToolConnection() {
+        this.$emit('selectTool', ToolsType.CONNECTION);
+      },
+      toggleShowGrid() {
+        this.$emit('toggleShowGrid');
+      },
+      openViewJson() {
+        this.$emit('openViewJson');
+      },
+      clear() {
+        this.$emit('clear');
+      },
+      shortcutHelper() {
+        this.$emit('shortcutHelper');
       },
       // 流程图信息
       flowInfo() {

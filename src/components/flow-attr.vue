@@ -87,7 +87,7 @@
           </a-form-item>
         </template>
 
-        <template v-if="[CommonNodeType.SERIAL, CommonNodeType.PARALLEL].indexOf(currentSelect.type) !== -1">
+        <template v-if="[CommonNodeType.ORDINARY, CommonNodeType.APPROVAL, CommonNodeType.API, CommonNodeType.DISPATCH, CommonNodeType.CONFIRMATION].indexOf(currentSelect.type) !== -1">
           <a-form-item label="是否等待兄弟任务">
             <attr-switch v-model="currentSelect.attrs.isWaitSibling" />
           </a-form-item>
@@ -234,6 +234,24 @@
         <a-form-item label="连线名称">
           <a-input v-model="currentSelect.label" @change="onLinkLabelChange" />
         </a-form-item>
+        <a-divider>连线样式</a-divider>
+        <a-form-item label="类型">
+          <a-select :value="getLinkConnectorType()" @change="onLinkConnectorTypeChange" style="width: 100%">
+            <a-select-option value="Bezier">贝塞尔曲线</a-select-option>
+            <a-select-option value="Straight">直线</a-select-option>
+            <a-select-option value="Flowchart">流程图线</a-select-option>
+            <a-select-option value="StateMachine">状态线</a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="颜色">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="color" :value="getLinkStroke()" @input="onLinkColorInput" style="width: 40px; height: 32px; border: 1px solid #d9d9d9; border-radius: 4px; cursor: pointer;"/>
+            <a-input :value="getLinkStroke()" @change="onLinkColorChange" style="width: 100px;"/>
+          </div>
+        </a-form-item>
+        <a-form-item label="粗细">
+          <a-slider :min="1" :max="10" :value="getLinkStrokeWidth()" @change="onLinkStrokeWidthChange" />
+        </a-form-item>
         <a-divider>连线条件配置</a-divider>
         <a-form-item label="条件变量名(新增)">
           <a-select v-model="currentSelect.attrs.varKey" allowClear showSearch mode="tags" placeholder="请选择或新增条件变量名" style="width: 100%">
@@ -298,7 +316,7 @@ const AttrSwitch = {
   }
 }
 
-const NODE_TYPES_WITH_ATTRS = [CommonNodeType.START, CommonNodeType.END, CommonNodeType.SERIAL, CommonNodeType.PARALLEL, HighNodeType.VIRTUAL]
+const NODE_TYPES_WITH_ATTRS = [CommonNodeType.START, CommonNodeType.END, CommonNodeType.ORDINARY, CommonNodeType.APPROVAL, CommonNodeType.API, CommonNodeType.DISPATCH, CommonNodeType.CONFIRMATION, HighNodeType.VIRTUAL]
 const NODE_TYPES_WITH_JOB = [...NODE_TYPES_WITH_ATTRS, HighNodeType.JOB]
 const DEFAULT_MOCK_DATA = {
   defFlows: [{ id: 1, flowKey: 'AskLeave' }],
@@ -382,6 +400,65 @@ export default {
           this.$message.error(errMsg)
         }
       }
+    },
+    ensureLinkAttrs() {
+      if (this.currentSelect.type !== CommonNodeType.LINK) return
+      if (!this.currentSelect.attrs) this.currentSelect.attrs = {}
+      const attrs = this.currentSelect.attrs
+      if (attrs.connectorType == null) attrs.connectorType = 'Flowchart'
+      if (attrs.stroke == null) attrs.stroke = '#2a2929'
+      if (attrs.strokeWidth == null) attrs.strokeWidth = 1
+    },
+    getLinkConnectorType() {
+      this.ensureLinkAttrs()
+      const type = this.currentSelect.attrs && this.currentSelect.attrs.connectorType
+      if (typeof type === 'string') return type
+      if (Array.isArray(type)) return type[0] || 'Flowchart'
+      return 'Flowchart'
+    },
+    getLinkStroke() {
+      this.ensureLinkAttrs()
+      return (this.currentSelect.attrs && this.currentSelect.attrs.stroke) || '#2a2929'
+    },
+    getLinkStrokeWidth() {
+      this.ensureLinkAttrs()
+      return (this.currentSelect.attrs && this.currentSelect.attrs.strokeWidth != null) ? this.currentSelect.attrs.strokeWidth : 1
+    },
+    applyLinkStyle(connectorType, stroke, strokeWidth) {
+      const conns = this.plumb.getConnections({
+        source: this.currentSelect.sourceId,
+        target: this.currentSelect.targetId
+      })
+      const conn = conns[0]
+      if (!conn) return
+      const connector = connectorType === 'Flowchart' || connectorType === 'StateMachine'
+        ? [connectorType, { gap: 5, cornerRadius: 8, alwaysRespectStubs: true }]
+        : connectorType
+      conn.setConnector(connector)
+      conn.setPaintStyle({ stroke: stroke || '#2a2929', strokeWidth: (strokeWidth != null) ? strokeWidth : 1 })
+    },
+    onLinkConnectorTypeChange(v) {
+      this.ensureLinkAttrs()
+      this.currentSelect.attrs.connectorType = v
+      this.applyLinkStyle(v, this.getLinkStroke(), this.getLinkStrokeWidth())
+    },
+    onLinkColorInput(e) {
+      const v = e.target && e.target.value
+      if (!v) return
+      this.ensureLinkAttrs()
+      this.currentSelect.attrs.stroke = v
+      this.applyLinkStyle(this.getLinkConnectorType(), v, this.getLinkStrokeWidth())
+    },
+    onLinkColorChange(e) {
+      const v = (e && e.target && e.target.value) || e
+      this.ensureLinkAttrs()
+      this.currentSelect.attrs.stroke = v || '#2a2929'
+      this.applyLinkStyle(this.getLinkConnectorType(), this.currentSelect.attrs.stroke, this.getLinkStrokeWidth())
+    },
+    onLinkStrokeWidthChange(v) {
+      this.ensureLinkAttrs()
+      this.currentSelect.attrs.strokeWidth = v
+      this.applyLinkStyle(this.getLinkConnectorType(), this.getLinkStroke(), v)
     },
     onLinkLabelChange(e) {
       const label = (e && e.target && e.target.value) || this.currentSelect.label || ''

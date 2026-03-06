@@ -59,12 +59,15 @@ export const highAttr = {
 }
 
 export const linkAttr = {
-  varKey: null
-  ,varVal: null
-  ,valType: '1'
-  ,operator: '1'
-  ,operatorType: '0'
-  ,isValid: '1'
+  varKey: null,
+  varVal: null,
+  valType: '1',
+  operator: '1',
+  operatorType: '0',
+  isValid: '1',
+  connectorType: 'Flowchart',
+  stroke: '#2a2929',
+  strokeWidth: 1
 }
 
 export const laneAttr = {

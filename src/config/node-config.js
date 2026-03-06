@@ -41,8 +41,8 @@ export const commonNodes = [
     jobSize: 1
 	},
 	{
-		type: CommonNodeType.SERIAL,
-		nodeName: '串行节点',
+		type: CommonNodeType.ORDINARY,
+		nodeName: '普通节点',
 		icon: 'right',
     attrs: deepClone(nodeAttr),
     clazz: deepClone(clazzAttr),
@@ -51,9 +51,39 @@ export const commonNodes = [
     status: null
 	},
 	{
-		type: CommonNodeType.PARALLEL,
-		nodeName: '并行节点',
+		type: CommonNodeType.APPROVAL,
+		nodeName: '审批节点',
+		icon: 'form',
+    attrs: deepClone(nodeAttr),
+    clazz: deepClone(clazzAttr),
+    defJob: deepClone(jobAttr),
+    jobSize: 1,
+    status: null
+	},
+	{
+		type: CommonNodeType.API,
+		nodeName: 'API节点',
+		icon: 'api',
+    attrs: deepClone(nodeAttr),
+    clazz: deepClone(clazzAttr),
+    defJob: deepClone(jobAttr),
+    jobSize: 1,
+    status: null
+	},
+	{
+		type: CommonNodeType.DISPATCH,
+		nodeName: '分派节点',
 		icon: 'apartment',
+    attrs: deepClone(nodeAttr),
+    clazz: deepClone(clazzAttr),
+    defJob: deepClone(jobAttr),
+    jobSize: 1,
+    status: null
+	},
+	{
+		type: CommonNodeType.CONFIRMATION,
+		nodeName: '确认节点',
+		icon: 'check-circle',
     attrs: deepClone(nodeAttr),
     clazz: deepClone(clazzAttr),
     defJob: deepClone(jobAttr),

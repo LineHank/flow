@@ -6,8 +6,11 @@ export const ToolsType = {
 
 export const CommonNodeType = {
   START : 'start',
-  SERIAL : 'serial',
-  PARALLEL : 'parallel',
+  ORDINARY : 'ordinary',
+  APPROVAL : 'approval',
+  API : 'api',
+  DISPATCH : 'dispatch',
+  CONFIRMATION : 'confirmation',
   END : 'end',
   LINK : 'link'
 }

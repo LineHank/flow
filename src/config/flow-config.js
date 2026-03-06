@@ -139,11 +139,6 @@ export let flowConfig = {
       codeName: 'CTRL',
       shortcutName: '多选'
     },
-    settingModal: {
-      code: 83,
-      codeName: 'CTRL+ALT+S',
-      shortcutName: '打开设置页面'
-    },
     jsonModal: {
       code: 84,
       codeName: 'CTRL+ALT+T',
@@ -194,6 +189,34 @@ export let flowConfig = {
           btnName: '流程图信息'
         },
         {
+          fnHandler: 'previewFlow',
+          icoName: 'eye',
+          btnName: '预览'
+        },
+        {
+          icoName: 'control',
+          btnName: '工具',
+          children: [
+            { fnHandler: 'selectToolDrag', icoName: 'drag', btnName: '拖拽' },
+            { fnHandler: 'selectToolConnection', icoName: 'share-alt', btnName: '连线' }
+          ]
+        },
+        {
+          fnHandler: 'toggleShowGrid',
+          icoName: 'poweroff',
+          btnName: '显示/隐藏网格'
+        },
+        {
+          fnHandler: 'openViewJson',
+          icoName: 'search',
+          btnName: '查看JSON'
+        },
+        {
+          fnHandler: 'clear',
+          icoName: 'delete',
+          btnName: '重新绘制'
+        },
+        {
           icoName: 'plus',
           btnName: '添加节点',
           children: [
@@ -202,8 +225,11 @@ export let flowConfig = {
               btnName: '基础',
               children: [
                 { fnHandler: 'addNodeStart', icoName: 'play-circle', btnName: '开始' },
-                { fnHandler: 'addNodeSerial', icoName: 'right', btnName: '串行节点' },
-                { fnHandler: 'addNodeParallel', icoName: 'apartment', btnName: '并行节点' },
+                { fnHandler: 'addNodeOrdinary', icoName: 'right', btnName: '普通节点' },
+                { fnHandler: 'addNodeApproval', icoName: 'form', btnName: '审批节点' },
+                { fnHandler: 'addNodeApi', icoName: 'api', btnName: 'API节点' },
+                { fnHandler: 'addNodeDispatch', icoName: 'apartment', btnName: '分派节点' },
+                { fnHandler: 'addNodeConfirmation', icoName: 'check-circle', btnName: '确认节点' },
                 { fnHandler: 'addNodeEnd', icoName: 'minus-circle', btnName: '结束' }
               ]
             },
@@ -252,6 +278,11 @@ export let flowConfig = {
           fnHandler: 'publishFlow',
           icoName: 'edit',
           btnName: '发布流程'
+        },
+        {
+          fnHandler: 'shortcutHelper',
+          icoName: 'keyboard',
+          btnName: '快捷键'
         }
       ]
     },

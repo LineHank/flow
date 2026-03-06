@@ -23,8 +23,8 @@
     <span v-else-if="node.type === CommonNodeType.END">{{ node.nodeName }}</span>
   </div>
 
-  <div v-else-if="node.type === CommonNodeType.SERIAL || node.type === CommonNodeType.PARALLEL || node.type === HighNodeType.VIRTUAL
-        || node.type === HighNodeType.CHILD_FLOW"
+  <div v-else-if="[CommonNodeType.ORDINARY, CommonNodeType.APPROVAL, CommonNodeType.API, CommonNodeType.DISPATCH, CommonNodeType.CONFIRMATION].indexOf(node.type) !== -1
+        || node.type === HighNodeType.VIRTUAL || node.type === HighNodeType.CHILD_FLOW"
        :id="node.id"
        class="common-rectangle-node"
        :class="{ active: isActive() }"
@@ -126,9 +126,11 @@
         switch (node.type) {
           case CommonNodeType.START:
             return nodeJobSvgIcons.start
-          case CommonNodeType.SERIAL:
-            return this.getSvgByStatus(node)
-          case CommonNodeType.PARALLEL:
+          case CommonNodeType.ORDINARY:
+          case CommonNodeType.APPROVAL:
+          case CommonNodeType.API:
+          case CommonNodeType.DISPATCH:
+          case CommonNodeType.CONFIRMATION:
             return this.getSvgByStatus(node)
           case HighNodeType.VIRTUAL:
             return this.getSvgByStatus(node)
@@ -150,9 +152,11 @@
         switch (node.type) {
           case CommonNodeType.START:
             return 'user'
-          case CommonNodeType.SERIAL:
-            return this.getIconByStatus(node)
-          case CommonNodeType.PARALLEL:
+          case CommonNodeType.ORDINARY:
+          case CommonNodeType.APPROVAL:
+          case CommonNodeType.API:
+          case CommonNodeType.DISPATCH:
+          case CommonNodeType.CONFIRMATION:
             return this.getIconByStatus(node)
           case HighNodeType.VIRTUAL:
             return 'refresh'

@@ -35,30 +35,6 @@
           />
         </a-form-item>
 
-        <a-divider orientation="left">连线</a-divider>
-        <a-form-item label="类型">
-          <a-select v-model="linkType" @change="setFlowType" style="width: 100%">
-            <a-select-option value="Bezier">贝塞尔曲线</a-select-option>
-            <a-select-option value="Straight">直线</a-select-option>
-            <a-select-option value="Flowchart">流程图线</a-select-option>
-            <a-select-option value="StateMachine">状态线</a-select-option>
-          </a-select>
-        </a-form-item>
-        <a-form-item label="颜色">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <input type="color" v-model="linkColor" @change="setLinkColorFromInput" style="width: 40px; height: 32px; border: 1px solid #d9d9d9; border-radius: 4px; cursor: pointer;"/>
-            <a-input v-model="linkColor" @change="setLinkColor" style="width: 100px;"/>
-          </div>
-        </a-form-item>
-        <a-form-item label="粗细">
-          <a-slider
-            :min="1"
-            :max="10"
-            v-model="linkThickness"
-            @change="setStrokeWidth"
-          />
-        </a-form-item>
-
         <a-divider orientation="left">默认样式</a-divider>
         <a-form-item label="辅助线">
           <a-switch
@@ -106,11 +82,7 @@
         settingVisible: false,
         settingForm: {},
         isOpenAuxiliaryLine: flowConfig.defaultStyle.isOpenAuxiliaryLine,
-        linkColor: flowConfig.jsPlumbInsConfig.PaintStyle.stroke,
-
         movePx: flowConfig.defaultStyle.movePx,
-        linkType: flowConfig.jsPlumbInsConfig.Connector[0],
-        linkThickness: flowConfig.jsPlumbInsConfig.PaintStyle.strokeWidth,
         alignLevelDistance: flowConfig.defaultStyle.alignSpacing.level,
         alignVerticalDistance: flowConfig.defaultStyle.alignSpacing.vertical,
         containerOnceNarrow: flowConfig.defaultStyle.containerScale.onceNarrow,
@@ -124,28 +96,12 @@
       close() {
         this.settingVisible = false
       },
-      setFlowType(v) {
-        flowConfig.jsPlumbInsConfig.Connector[0] = v
-      },
       toggleOpenAuxiliaryLine(checked) {
         this.isOpenAuxiliaryLine = checked ? '开' : '关'
         flowConfig.defaultStyle.isOpenAuxiliaryLine = checked
       },
       setMovePx(v) {
         flowConfig.defaultStyle.movePx = v
-      },
-      setLinkColor(e) {
-        const v = e.target ? e.target.value : e
-        this.linkColor = v
-        flowConfig.jsPlumbInsConfig.PaintStyle.stroke = v
-      },
-      setLinkColorFromInput(e) {
-        const v = e.target.value
-        this.linkColor = v
-        flowConfig.jsPlumbInsConfig.PaintStyle.stroke = v
-      },
-      setStrokeWidth(v) {
-        flowConfig.jsPlumbInsConfig.PaintStyle.strokeWidth = v
       },
       setAlignLevelDistance(v) {
         flowConfig.defaultStyle.alignSpacing.level = v
