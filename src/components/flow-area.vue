@@ -42,6 +42,10 @@
         :selectGroup.sync="currentSelectGroup"
         :currentTool="currentTool"
         @showNodeContextMenu="showNodeContextMenu($event, node)"
+        @showAddMenu="onShowAddMenu"
+        @scheduleHideAddMenu="onScheduleHideAddMenu"
+        @addNodeFromNode="addNodeFromNode"
+        @deleteNode="deleteNode"
         :rectangleMultiple="rectangleMultiple"
         @updateNodePos="updateNodePos"
         @alignForLine="alignForLine"
@@ -59,6 +63,43 @@
           height: rectangleMultiple.height + 'px'
         }"
       ></div>
+    </div>
+    <!-- 添加节点菜单（渲染在画布外，避免 transform 影响，悬停显示） -->
+    <div
+      v-show="addMenuVisible"
+      class="node-add-menu"
+      :style="addMenuStyle"
+      @mousedown.stop
+      @mouseenter="onAddMenuMouseEnter"
+      @mouseleave="onAddMenuMouseLeave">
+      <div class="node-add-menu-item" @click="onAddNodeMenuClick('ordinary')">
+        <a-icon type="right" />
+        <span>普通节点</span>
+      </div>
+      <div class="node-add-menu-item" @click="onAddNodeMenuClick('approval')">
+        <a-icon type="form" />
+        <span>审批节点</span>
+      </div>
+      <div class="node-add-menu-item" @click="onAddNodeMenuClick('api')">
+        <a-icon type="api" />
+        <span>API节点</span>
+      </div>
+      <div class="node-add-menu-item" @click="onAddNodeMenuClick('dispatch')">
+        <a-icon type="apartment" />
+        <span>分派节点</span>
+      </div>
+      <div class="node-add-menu-item" @click="onAddNodeMenuClick('confirmation')">
+        <a-icon type="check-circle" />
+        <span>确认节点</span>
+      </div>
+      <div class="node-add-menu-item" @click="onAddNodeMenuClick('judgment')">
+        <a-icon type="question-circle" />
+        <span>判断节点</span>
+      </div>
+      <!-- <div class="node-add-menu-item" @click="onAddNodeMenuClick('end')">
+        <a-icon type="minus-circle" />
+        <span>结束</span>
+      </div> -->
     </div>
     <div class="container-scale">
       <a-button shape="circle" size="small" type="default" @click="enlargeContainer">
@@ -97,6 +138,7 @@
       @addNodeApi="() => addNodeByType('commonNodes', 'api')"
       @addNodeDispatch="() => addNodeByType('commonNodes', 'dispatch')"
       @addNodeConfirmation="() => addNodeByType('commonNodes', 'confirmation')"
+      @addNodeJudgment="() => addNodeByType('commonNodes', 'judgment')"
       @addNodeEnd="() => addNodeByType('commonNodes', 'end')"
       @addNodeVirtual="() => addNodeByType('highNodes', 'virtual')"
       @addNodeJob="() => addNodeByType('highNodes', 'job')"
@@ -108,6 +150,13 @@
     <vue-context-menu
       :contextMenuData="nodeContextMenuData"
       @setNodeAttr="dbClickNode"
+      @addNodeFromNodeOrdinary="() => addNodeFromNode('commonNodes', 'ordinary')"
+      @addNodeFromNodeApproval="() => addNodeFromNode('commonNodes', 'approval')"
+      @addNodeFromNodeApi="() => addNodeFromNode('commonNodes', 'api')"
+      @addNodeFromNodeDispatch="() => addNodeFromNode('commonNodes', 'dispatch')"
+      @addNodeFromNodeConfirmation="() => addNodeFromNode('commonNodes', 'confirmation')"
+      @addNodeFromNodeJudgment="() => addNodeFromNode('commonNodes', 'judgment')"
+      @addNodeFromNodeEnd="() => addNodeFromNode('commonNodes', 'end')"
       @copyNode="copyNode"
       @deleteNode="deleteNode"
     >
@@ -194,8 +243,15 @@
         // 当前聚焦的连接线ID
         tempLinkId: "",
         // 剪切板内容
-        clipboard: []
+        clipboard: [],
+        // 添加节点菜单
+        addMenuVisible: false,
+        addMenuStyle: {},
+        addMenuHideTimer: null
       };
+    },
+    beforeDestroy() {
+      this.clearAddMenuHideTimer()
     },
     computed: {
       gridStyle() {
@@ -666,37 +722,78 @@
         });
         return conns1.concat(conns2);
       },
-      // 删除节点
+      // 删除节点（删除后重新连接前后节点）
       deleteNode() {
-        let nodeList = this.flowData.nodeList;
-        let linkList = this.flowData.linkList;
-        let arr = [];
-
-        arr.push(Object.assign({}, this.currentSelect));
+        const nodeList = this.flowData.nodeList;
+        const linkList = this.flowData.linkList;
+        const deletedNode = this.currentSelect;
+        if (!deletedNode || !deletedNode.id) return;
 
         this.flowData.status = flowConfig.flowStatus.LOADING;
 
-        arr.forEach(c => {
-          let conns = this.getConnectionsByNodeId(c.id);
-          conns.forEach(conn => {
-            linkList.splice(
-              linkList.findIndex(
-                link => link.sourceId === conn.sourceId && link.targetId === conn.targetId
-              ),
-              1
-            );
-            this.plumb.deleteConnection(
-              this.plumb.getConnections({
-                source: conn.sourceId,
-                target: conn.targetId
-              })[0]
-            );
-            // 减小节点任务数
-            this.$emit('upOrDownNodeJobs',conn.sourceId, conn.targetId, false)
+        const conns = this.getConnectionsByNodeId(deletedNode.id);
+        const incomingConns = conns.filter(c => c.targetId === deletedNode.id);
+        const outgoingConns = conns.filter(c => c.sourceId === deletedNode.id);
+
+        // 收集需要新建的连线：每个前驱节点连到每个后继节点
+        const newConnections = [];
+        incomingConns.forEach(inConn => {
+          outgoingConns.forEach(outConn => {
+            const sourceId = inConn.sourceId;
+            const targetId = outConn.targetId;
+            if (sourceId !== targetId && !linkList.some(l => l.sourceId === sourceId && l.targetId === targetId)) {
+              newConnections.push({ sourceId, targetId });
+            }
           });
-          let inx = nodeList.findIndex(node => node.id === c.id);
-          nodeList.splice(inx, 1);
         });
+
+        // 在删除前保存连线样式
+        const existingLink = (incomingConns[0] && linkList.find(l => l.sourceId === incomingConns[0].sourceId && l.targetId === deletedNode.id))
+          || (outgoingConns[0] && linkList.find(l => l.sourceId === deletedNode.id && l.targetId === outgoingConns[0].targetId));
+        const attrsTemplate = existingLink && existingLink.attrs
+          ? { ...existingLink.attrs }
+          : { connectorType: 'Straight', stroke: '#2a2929', strokeWidth: 1 };
+
+        // 删除与该节点相关的所有连线
+        conns.forEach(conn => {
+          const linkIdx = linkList.findIndex(l => l.sourceId === conn.sourceId && l.targetId === conn.targetId);
+          if (linkIdx >= 0) linkList.splice(linkIdx, 1);
+          const plumbConns = this.plumb.getConnections({ source: conn.sourceId, target: conn.targetId });
+          if (plumbConns[0]) this.plumb.deleteConnection(plumbConns[0]);
+          this.$emit('upOrDownNodeJobs', conn.sourceId, conn.targetId, false);
+        });
+
+        this.$nextTick(() => {
+          newConnections.forEach(({ sourceId, targetId }) => {
+            this.plumb.connect({
+              source: sourceId,
+              target: targetId,
+              connector: 'Straight',
+              anchors: ['Bottom', 'Top']
+            });
+            const link = linkList.filter(l => l.sourceId === sourceId && l.targetId === targetId)[0];
+            if (link) {
+              if (!link.attrs) link.attrs = {};
+              Object.assign(link.attrs, attrsTemplate);
+            }
+            this.$emit('upOrDownNodeJobs', sourceId, targetId, true);
+          });
+
+          // 删除节点
+          const nodeIdx = nodeList.findIndex(n => n.id === deletedNode.id);
+          if (nodeIdx >= 0) nodeList.splice(nodeIdx, 1);
+
+          // 上移后继节点，填补删除产生的空隙
+          const gap = 10;
+          const pullUpAmount = deletedNode.height + gap;
+          const deletedBottom = deletedNode.y + deletedNode.height;
+          nodeList.forEach(n => {
+            if (n.y >= deletedBottom) n.y -= pullUpAmount;
+          });
+
+          this.$nextTick(() => this.plumb.repaintEverything());
+        });
+
         this.flowData.status = flowConfig.flowStatus.CREATE;
         this.selectContainer();
       },
@@ -710,6 +807,298 @@
           this.addNewNode(node);
         }.bind(this));
       },
+      // 显示添加节点菜单（悬停加号触发）
+      onShowAddMenu({ visible, left, top }) {
+        this.clearAddMenuHideTimer()
+        this.addMenuVisible = visible
+        this.addMenuStyle = {
+          position: 'fixed',
+          left: left + 'px',
+          top: top + 'px',
+          zIndex: 9999
+        }
+      },
+      // 延迟隐藏菜单（鼠标移出加号或菜单时）
+      onScheduleHideAddMenu() {
+        this.clearAddMenuHideTimer()
+        this.addMenuHideTimer = setTimeout(() => {
+          this.addMenuVisible = false
+          this.addMenuHideTimer = null
+        }, 150)
+      },
+      onAddMenuMouseEnter() {
+        this.clearAddMenuHideTimer()
+      },
+      onAddMenuMouseLeave() {
+        this.onScheduleHideAddMenu()
+      },
+      clearAddMenuHideTimer() {
+        if (this.addMenuHideTimer) {
+          clearTimeout(this.addMenuHideTimer)
+          this.addMenuHideTimer = null
+        }
+      },
+      closeAddMenu() {
+        this.addMenuVisible = false
+        this.clearAddMenuHideTimer()
+      },
+      // 点击添加节点菜单项
+      onAddNodeMenuClick(key) {
+        const map = {
+          ordinary: ['commonNodes', 'ordinary'],
+          approval: ['commonNodes', 'approval'],
+          api: ['commonNodes', 'api'],
+          dispatch: ['commonNodes', 'dispatch'],
+          confirmation: ['commonNodes', 'confirmation'],
+          judgment: ['commonNodes', 'judgment'],
+          end: ['commonNodes', 'end']
+        }
+        const [belongTo, type] = map[key] || []
+        if (belongTo && type) this.addNodeFromNode(belongTo, type)
+        this.closeAddMenu()
+      },
+      // 在节点下方添加新节点并连线（插入到流程中）
+      addNodeFromNode(belongTo, type) {
+        const sourceNode = this.currentSelect;
+        if (!sourceNode || !sourceNode.id) {
+          this.$message.warning("请先选择节点");
+          return;
+        }
+        if (type === 'judgment') {
+          this.addJudgmentNode(sourceNode);
+          return;
+        }
+        this.$emit("findNodeConfig", belongTo, type, function(node) {
+          if (!node) {
+            this.$message.error("未知的节点类型");
+            return;
+          }
+          const gap = 10;
+          const nodeList = this.flowData.nodeList;
+          const linkList = this.flowData.linkList;
+
+          const newNode = Object.assign({}, node);
+          newNode.id = utils.getId();
+          newNode.icon = null;
+          const isJudgmentSource = sourceNode.type === CommonNodeType.JUDGMENT;
+          const sourceW = sourceNode.width || 70;
+          const sourceH = sourceNode.height || 70;
+
+          if (newNode.type === CommonNodeType.START || newNode.type === CommonNodeType.END) {
+            newNode.height = 50;
+            newNode.width = 50;
+          } else if (newNode.type === CommonNodeType.JUDGMENT) {
+            newNode.height = 70;
+            newNode.width = 70;
+          } else {
+            newNode.height = 50;
+            newNode.width = 120;
+          }
+
+          if (isJudgmentSource) {
+            newNode.x = sourceNode.x + sourceW + gap;
+            newNode.y = sourceNode.y + (sourceH - (newNode.height || 50)) / 2;
+          } else if (newNode.type === CommonNodeType.START || newNode.type === CommonNodeType.END) {
+            newNode.x = sourceNode.x + (sourceW - 50) / 2;
+            newNode.y = sourceNode.y + sourceH + gap;
+          } else {
+            newNode.x = sourceNode.x + (sourceW - (newNode.width || 120)) / 2;
+            newNode.y = sourceNode.y + sourceH + gap;
+          }
+
+          const outConns = this.plumb.getConnections({ source: sourceNode.id });
+          let oldTargetId = null;
+
+          if (!isJudgmentSource && outConns.length === 1) {
+            oldTargetId = outConns[0].targetId;
+            const oldTarget = nodeList.find(n => n.id === oldTargetId);
+            this.plumb.deleteConnection(outConns[0]);
+            const linkIdx = linkList.findIndex(
+              l => l.sourceId === sourceNode.id && l.targetId === oldTargetId
+            );
+            if (linkIdx >= 0) linkList.splice(linkIdx, 1);
+            this.$emit('upOrDownNodeJobs', sourceNode.id, oldTargetId, false);
+
+            if (oldTarget) {
+              const targetNewY = newNode.y + newNode.height + gap;
+              const pushDownAmount = targetNewY - oldTarget.y;
+              const sourceBottom = sourceNode.y + sourceNode.height;
+              nodeList.forEach(n => {
+                if (n.id !== newNode.id && n.y >= sourceBottom) n.y += pushDownAmount;
+              });
+            }
+          }
+
+          nodeList.push(newNode);
+
+          this.$nextTick(() => {
+            const anchors = isJudgmentSource ? ['Right', 'Left'] : ['Bottom', 'Top'];
+            this.plumb.connect({
+              source: sourceNode.id,
+              target: newNode.id,
+              connector: 'Straight',
+              anchors
+            });
+            let link = linkList.filter(
+              l => l.sourceId === sourceNode.id && l.targetId === newNode.id
+            )[0];
+            if (link && !link.attrs) link.attrs = {};
+            if (link) link.attrs.connectorType = 'Straight';
+            this.$emit('upOrDownNodeJobs', sourceNode.id, newNode.id, true);
+
+            if (!isJudgmentSource && outConns.length === 1 && oldTargetId) {
+              this.plumb.connect({
+                source: newNode.id,
+                target: oldTargetId,
+                connector: 'Straight',
+                anchors: ['Bottom', 'Top']
+              });
+              link = linkList.filter(
+                l => l.sourceId === newNode.id && l.targetId === oldTargetId
+              )[0];
+              if (link && !link.attrs) link.attrs = {};
+              if (link) link.attrs.connectorType = 'Straight';
+              this.$emit('upOrDownNodeJobs', newNode.id, oldTargetId, true);
+            }
+
+            this.$nextTick(() => {
+              this.plumb.repaintEverything();
+            });
+          });
+        }.bind(this));
+      },
+      // 添加判断节点：两条分支，一条接原流程，一条接默认节点再接到结束
+      addJudgmentNode(sourceNode) {
+        this.$emit("findNodeConfig", "commonNodes", "judgment", (judgmentNode) => {
+          if (!judgmentNode) {
+            this.$message.error("未知的节点类型");
+            return;
+          }
+          this.$emit("findNodeConfig", "commonNodes", "ordinary", (branchNode) => {
+            if (!branchNode) {
+              this.$message.error("获取默认节点失败");
+              return;
+            }
+            const gap = 10;
+            const nodeList = this.flowData.nodeList;
+            const linkList = this.flowData.linkList;
+            const outConns = this.plumb.getConnections({ source: sourceNode.id });
+
+            if (outConns.length !== 1) {
+              this.$message.warning("请从只有一个出线的节点添加判断节点");
+              return;
+            }
+
+            const oldTargetId = outConns[0].targetId;
+            const oldTarget = nodeList.find(n => n.id === oldTargetId);
+            let endNode = nodeList.find(n => n.type === CommonNodeType.END);
+
+            this.plumb.deleteConnection(outConns[0]);
+            const linkIdx = linkList.findIndex(
+              l => l.sourceId === sourceNode.id && l.targetId === oldTargetId
+            );
+            if (linkIdx >= 0) linkList.splice(linkIdx, 1);
+            this.$emit('upOrDownNodeJobs', sourceNode.id, oldTargetId, false);
+
+            const sourceW = sourceNode.width || 120;
+            const sourceH = sourceNode.height || 50;
+
+            const judgment = Object.assign({}, judgmentNode);
+            judgment.id = utils.getId();
+            judgment.icon = null;
+            judgment.width = 70;
+            judgment.height = 70;
+            judgment.x = sourceNode.x + (sourceW - 70) / 2;
+            judgment.y = sourceNode.y + sourceH + gap;
+
+            const branch = Object.assign({}, branchNode);
+            branch.id = utils.getId();
+            branch.icon = null;
+            branch.width = 120;
+            branch.height = 50
+            branch.nodeName = '普通节点';
+            branch.x = judgment.x + 70 + gap;
+            branch.y = judgment.y + (70 - 50) / 2;
+
+            const finishAdd = () => {
+              const sourceBottom = sourceNode.y + sourceH;
+              const judgmentBottom = judgment.y + 70;
+              const needY = judgmentBottom + gap;
+
+              if (oldTarget && oldTarget.y < needY) {
+                const pushDown = needY - oldTarget.y;
+                nodeList.forEach(n => {
+                  if (n.id !== judgment.id && n.id !== branch.id && n.y >= oldTarget.y) n.y += pushDown;
+                });
+              }
+
+              nodeList.push(judgment);
+              nodeList.push(branch);
+              if (endNode && !nodeList.includes(endNode)) nodeList.push(endNode);
+
+              this.$nextTick(() => {
+                this.plumb.connect({
+                  source: sourceNode.id,
+                  target: judgment.id,
+                  connector: 'Straight',
+                  anchors: ['Bottom', 'Top']
+                });
+                this.plumb.connect({
+                  source: judgment.id,
+                  target: oldTargetId,
+                  connector: 'Straight',
+                  anchors: ['Bottom', 'Top']
+                });
+                this.plumb.connect({
+                  source: judgment.id,
+                  target: branch.id,
+                  connector: 'Straight',
+                  anchors: ['Right', 'Left']
+                });
+                this.plumb.connect({
+                  source: branch.id,
+                  target: endNode.id,
+                  connector: 'Straight',
+                  anchors: ['Bottom', 'Top']
+                });
+
+                linkList.forEach(l => {
+                  if (!l.attrs) l.attrs = {};
+                  if ((l.sourceId === sourceNode.id && l.targetId === judgment.id) ||
+                      (l.sourceId === judgment.id && l.targetId === oldTargetId) ||
+                      (l.sourceId === judgment.id && l.targetId === branch.id) ||
+                      (l.sourceId === branch.id && l.targetId === endNode.id)) {
+                    l.attrs.connectorType = 'Straight';
+                  }
+                });
+                this.$emit('upOrDownNodeJobs', sourceNode.id, judgment.id, true);
+                this.$emit('upOrDownNodeJobs', judgment.id, oldTargetId, true);
+                this.$emit('upOrDownNodeJobs', judgment.id, branch.id, true);
+                this.$emit('upOrDownNodeJobs', branch.id, endNode.id, true);
+
+                this.$nextTick(() => this.plumb.repaintEverything());
+              });
+            };
+
+            if (!endNode) {
+              this.$emit("findNodeConfig", "commonNodes", "end", (endNodeConfig) => {
+                if (!endNodeConfig) return;
+                endNode = Object.assign({}, endNodeConfig);
+                endNode.id = utils.getId();
+                endNode.icon = null;
+                endNode.width = 50;
+                endNode.height = 50;
+                const maxY = Math.max(judgment.y + 70, branch.y + 50, ...nodeList.map(n => n.y + (n.height || 50)));
+                endNode.x = branch.x + (120 - 50) / 2;
+                endNode.y = maxY + gap;
+                finishAdd();
+              });
+            } else {
+              finishAdd();
+            }
+          });
+        });
+      },
       // 增加画布节点
       addNewNode(node) {
         let x = this.mouse.position.x;
@@ -720,18 +1109,25 @@
 
         let newNode = Object.assign({}, node);
         newNode.id = utils.getId();
-        newNode.height = 50;
         if (
           newNode.type === CommonNodeType.START ||
           newNode.type === CommonNodeType.END
         ) {
-          newNode.x = x - 25;
+          newNode.height = 50;
           newNode.width = 50;
+          newNode.x = x - 25;
+          newNode.y = y - 25;
+        } else if (newNode.type === CommonNodeType.JUDGMENT) {
+          newNode.height = 70;
+          newNode.width = 70;
+          newNode.x = x - 35;
+          newNode.y = y - 35;
         } else {
-          newNode.x = x - 60;
+          newNode.height = 50;
           newNode.width = 120;
+          newNode.x = x - 60;
+          newNode.y = y - 25;
         }
-        newNode.y = y - 25;
         if (newNode.type === LaneNodeType.X_LANE) {
           newNode.height = 200;
           newNode.width = 500;

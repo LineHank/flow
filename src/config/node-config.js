@@ -5,6 +5,7 @@ import {
   endAttr,
   highAttr,
   jobAttr,
+  judgmentAttr,
   laneAttr,
   linkAttr,
   nodeAttr,
@@ -88,6 +89,16 @@ export const commonNodes = [
     clazz: deepClone(clazzAttr),
     defJob: deepClone(jobAttr),
     jobSize: 1,
+    status: null
+	},
+	{
+		type: CommonNodeType.JUDGMENT,
+		nodeName: '判断节点',
+		icon: 'question-circle',
+    attrs: deepClone(judgmentAttr),
+    clazz: deepClone(clazzAttr),
+    defJob: deepClone(jobAttr),
+    jobSize: 0,
     status: null
 	},
   {

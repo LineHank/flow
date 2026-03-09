@@ -87,6 +87,12 @@
           </a-form-item>
         </template>
 
+        <template v-if="currentSelect.type === CommonNodeType.JUDGMENT">
+          <a-form-item label="判断说明">
+            <a-input v-model="currentSelect.attrs.conditionExpr" placeholder="可选，各分支条件在连线上配置" />
+          </a-form-item>
+        </template>
+
         <template v-if="[CommonNodeType.ORDINARY, CommonNodeType.APPROVAL, CommonNodeType.API, CommonNodeType.DISPATCH, CommonNodeType.CONFIRMATION].indexOf(currentSelect.type) !== -1">
           <a-form-item label="是否等待兄弟任务">
             <attr-switch v-model="currentSelect.attrs.isWaitSibling" />
@@ -316,7 +322,7 @@ const AttrSwitch = {
   }
 }
 
-const NODE_TYPES_WITH_ATTRS = [CommonNodeType.START, CommonNodeType.END, CommonNodeType.ORDINARY, CommonNodeType.APPROVAL, CommonNodeType.API, CommonNodeType.DISPATCH, CommonNodeType.CONFIRMATION, HighNodeType.VIRTUAL]
+const NODE_TYPES_WITH_ATTRS = [CommonNodeType.START, CommonNodeType.END, CommonNodeType.ORDINARY, CommonNodeType.APPROVAL, CommonNodeType.API, CommonNodeType.DISPATCH, CommonNodeType.CONFIRMATION, CommonNodeType.JUDGMENT, HighNodeType.VIRTUAL]
 const NODE_TYPES_WITH_JOB = [...NODE_TYPES_WITH_ATTRS, HighNodeType.JOB]
 const DEFAULT_MOCK_DATA = {
   defFlows: [{ id: 1, flowKey: 'AskLeave' }],

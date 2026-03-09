@@ -25,12 +25,19 @@ body,
 
 .howe-home__loader {
   margin-bottom: 1.5rem;
+  animation: howe-pulse 1.5s ease-in-out infinite;
 }
 
 .howe-home__spinner {
   width: 48px;
   height: 48px;
-  opacity: 0.9;
+  opacity: 0.95;
+  display: block;
+}
+
+@keyframes howe-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.05); }
 }
 
 .howe-home__title {
@@ -46,6 +53,30 @@ body,
   font-size: 0.875rem;
   margin: 0;
   font-weight: 400;
+}
+
+.howe-home__dots {
+  display: inline-block;
+  margin-left: 2px;
+}
+
+.howe-home__dots i {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin: 0 1px;
+  background: #9ca3af;
+  border-radius: 50%;
+  animation: howe-dots 1.4s ease-in-out infinite;
+}
+
+.howe-home__dots i:nth-child(1) { animation-delay: 0s; }
+.howe-home__dots i:nth-child(2) { animation-delay: 0.2s; }
+.howe-home__dots i:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes howe-dots {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1.2); }
 }
 
 .howe-home__footer {

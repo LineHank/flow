@@ -226,6 +226,7 @@ export let flowConfig = {
             { fnHandler: 'addNodeApi', icoName: 'api', btnName: 'API节点' },
             { fnHandler: 'addNodeDispatch', icoName: 'apartment', btnName: '分派节点' },
             { fnHandler: 'addNodeConfirmation', icoName: 'check-circle', btnName: '确认节点' },
+            { fnHandler: 'addNodeJudgment', icoName: 'question-circle', btnName: '判断节点' },
             // { fnHandler: 'addNodeEnd', icoName: 'minus-circle', btnName: '结束' }
             // 高级暂时隐藏
             // {
@@ -293,6 +294,19 @@ export let flowConfig = {
           fnHandler: 'setNodeAttr',
           icoName: 'edit',
           btnName: '设置属性'
+        },
+        {
+          icoName: 'plus',
+          btnName: '添加节点',
+          children: [
+            { fnHandler: 'addNodeFromNodeOrdinary', icoName: 'right', btnName: '普通节点' },
+            { fnHandler: 'addNodeFromNodeApproval', icoName: 'form', btnName: '审批节点' },
+            { fnHandler: 'addNodeFromNodeApi', icoName: 'api', btnName: 'API节点' },
+            { fnHandler: 'addNodeFromNodeDispatch', icoName: 'apartment', btnName: '分派节点' },
+            { fnHandler: 'addNodeFromNodeConfirmation', icoName: 'check-circle', btnName: '确认节点' },
+            { fnHandler: 'addNodeFromNodeJudgment', icoName: 'question-circle', btnName: '判断节点' },
+            // { fnHandler: 'addNodeFromNodeEnd', icoName: 'minus-circle', btnName: '结束' }
+          ]
         },
         {
           fnHandler: 'copyNode',

@@ -16,11 +16,33 @@
        @dblclick.stop="dbClickNode"
        @contextmenu.stop="showNodeContextMenu">
     <div v-if="node.type === CommonNodeType.START">
-      <img :src="setSvgIcon(node)" class="start-icon" alt="start">
-      <span style="position: absolute; left: 31px;">{{ node.nodeName }}</span>
-      <img :src="setSvgIcon(node, true)" class="arrow-icon" alt="arrow">
+      <span>{{ node.nodeName }}</span>
     </div>
     <span v-else-if="node.type === CommonNodeType.END">{{ node.nodeName }}</span>
+  </div>
+
+  <div v-else-if="node.type === CommonNodeType.JUDGMENT"
+       :id="node.id"
+       class="common-diamond-node"
+       :class="{ active: isActive() }"
+       :style="{
+         top: node.y + 'px',
+         left: node.x + 'px',
+         cursor: setCursor(currentTool.type)
+       }"
+       @click.stop="selectNode"
+       @dblclick.stop="dbClickNode"
+       @contextmenu.stop="showNodeContextMenu">
+    <div class="diamond-inner">
+      <a-icon :type="getNodeIconType(node)" class="node-icon" />
+      <span class="diamond-node-name">{{ node.nodeName }}</span>
+    </div>
+    <div
+      class="node-delete-btn"
+      @mousedown.stop
+      @click.stop="onDeleteNode">
+      <a-icon type="close" />
+    </div>
   </div>
 
   <div v-else-if="[CommonNodeType.ORDINARY, CommonNodeType.APPROVAL, CommonNodeType.API, CommonNodeType.DISPATCH, CommonNodeType.CONFIRMATION].indexOf(node.type) !== -1
@@ -36,8 +58,22 @@
        @click.stop="selectNode"
        @dblclick.stop="dbClickNode"
        @contextmenu.stop="showNodeContextMenu">
-    <img :src="setSvgIcon(node)" class="node-icon" alt="node">
+    <a-icon :type="getNodeIconType(node)" class="node-icon" />
     {{ node.nodeName }} {{ node.jobSize ? '(' + node.jobSize + ')' : '' }}
+    <div
+      class="node-delete-btn"
+      @mousedown.stop
+      @click.stop="onDeleteNode">
+      <a-icon type="close" />
+    </div>
+    <div
+      ref="addPlusRef"
+      class="node-add-plus"
+      @mousedown.stop
+      @mouseenter="onAddPlusMouseEnter"
+      @mouseleave="$emit('scheduleHideAddMenu')">
+      <a-icon type="plus" />
+    </div>
   </div>
 
   <div v-else-if="node.type === HighNodeType.JOB"
@@ -114,7 +150,7 @@
         currentSelectGroup: this.selectGroup,
         CommonNodeType: CommonNodeType,
         HighNodeType: HighNodeType,
-        LaneNodeType: LaneNodeType
+        LaneNodeType: LaneNodeType,
       }
     },
     methods: {
@@ -147,6 +183,22 @@
         if (node.status === '1') return 'circle-check'
         if (HighNodeType.JOB === node.type) return nodeJobSvgIcons.job
         return nodeJobSvgIcons.node
+      },
+      // 获取节点对应的 Ant Design 图标类型
+      getNodeIconType(node) {
+        if (node.status === '0') return 'loading'
+        if (node.status === '1') return 'circle-check'
+        const typeIconMap = {
+          [CommonNodeType.ORDINARY]: 'right',
+          [CommonNodeType.APPROVAL]: 'form',
+          [CommonNodeType.API]: 'api',
+          [CommonNodeType.DISPATCH]: 'apartment',
+          [CommonNodeType.CONFIRMATION]: 'check-circle',
+          [CommonNodeType.JUDGMENT]: 'question-circle',
+          [HighNodeType.VIRTUAL]: 'reload',
+          [HighNodeType.CHILD_FLOW]: 'setting'
+        }
+        return typeIconMap[node.type] || node.icon || 'tool'
       },
       setIcon(node) {
         switch (node.type) {
@@ -190,8 +242,10 @@
         window._plumb.draggable(this.node.id, {
           containment: 'parent',
           handle: (e, el) => {
+            // 加号、删除按钮区域不触发拖拽
+            if (e.target.closest && (e.target.closest('.node-add-plus') || e.target.closest('.node-delete-btn'))) return false
             // 判断节点类型
-            let possibles = el.parentNode.querySelectorAll('.common-circle-node,.common-rectangle-node,.common-job-node,.lane-text-div')
+            let possibles = el.parentNode.querySelectorAll('.common-circle-node,.common-rectangle-node,.common-diamond-node,.common-job-node,.lane-text-div')
             for (let i = 0; i < possibles.length; i++) {
               if (possibles[i] === el || e.target.className === 'lane-text') return true
             }
@@ -255,6 +309,23 @@
       showNodeContextMenu(e) {
         this.selectNode()
         this.$emit('showNodeContextMenu', e, this.node)
+      },
+      // 点击删除按钮
+      onDeleteNode() {
+        this.selectNode()
+        this.$emit('deleteNode')
+      },
+      // 鼠标悬停加号显示添加节点菜单
+      onAddPlusMouseEnter() {
+        this.selectNode()
+        const plus = this.$refs.addPlusRef
+        if (!plus) return
+        const rect = plus.getBoundingClientRect()
+        this.$emit('showAddMenu', {
+          visible: true,
+          left: rect.right + 4,
+          top: rect.top
+        })
       },
       // 节点是否激活
       isActive() {

@@ -11,6 +11,7 @@ export const CommonNodeType = {
   API : 'api',
   DISPATCH : 'dispatch',
   CONFIRMATION : 'confirmation',
+  JUDGMENT : 'judgment',
   END : 'end',
   LINK : 'link'
 }

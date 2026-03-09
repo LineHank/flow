@@ -43,6 +43,11 @@ export const jobAttr = {
   isValid: '1'
 }
 
+export const judgmentAttr = {
+  ...deepClone(commonAttr),
+  conditionExpr: null  // 判断表达式，可留空由各出线条件决定
+}
+
 export const endAttr = {
   ...deepClone(commonAttr),
   isAutoEnd: '0'
