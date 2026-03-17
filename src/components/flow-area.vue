@@ -881,15 +881,15 @@
           newNode.id = utils.getId();
           newNode.icon = null;
           const isJudgmentSource = sourceNode.type === CommonNodeType.JUDGMENT;
-          const sourceW = sourceNode.width || 70;
-          const sourceH = sourceNode.height || 70;
+          const sourceW = sourceNode.width || (isJudgmentSource ? 100 : 120);
+          const sourceH = sourceNode.height || (isJudgmentSource ? 55 : 50);
 
           if (newNode.type === CommonNodeType.START || newNode.type === CommonNodeType.END) {
             newNode.height = 50;
             newNode.width = 50;
           } else if (newNode.type === CommonNodeType.JUDGMENT) {
-            newNode.height = 70;
-            newNode.width = 70;
+            newNode.height = 55;
+            newNode.width = 100;
           } else {
             newNode.height = 50;
             newNode.width = 120;
@@ -980,6 +980,9 @@
               return;
             }
             const gap = 10;
+            // 判断节点插入时使用较大垂直间距，避免与后续节点挨在一起
+            const verticalGap = 50;
+            const sourceJudgmentGap = 25; // 源节点与判断节点之间的间距
             const nodeList = this.flowData.nodeList;
             const linkList = this.flowData.linkList;
             const outConns = this.plumb.getConnections({ source: sourceNode.id });
@@ -1002,97 +1005,141 @@
 
             const sourceW = sourceNode.width || 120;
             const sourceH = sourceNode.height || 50;
+            const sourceBottom = sourceNode.y + sourceH;
+
+            // 1. 下移源节点下方的所有节点，腾出 judgment 的空间（扁菱形 100x55）
+            const judgmentW = 100;
+            const judgmentH = 55;
+            const pushDown = sourceJudgmentGap + judgmentH + verticalGap;
+            nodeList.forEach(n => {
+              if (n.y >= sourceBottom) n.y += pushDown;
+            });
 
             const judgment = Object.assign({}, judgmentNode);
             judgment.id = utils.getId();
             judgment.icon = null;
-            judgment.width = 70;
-            judgment.height = 70;
-            judgment.x = sourceNode.x + (sourceW - 70) / 2;
-            judgment.y = sourceNode.y + sourceH + gap;
+            judgment.width = judgmentW;
+            judgment.height = judgmentH;
+            judgment.x = sourceNode.x + (sourceW - judgmentW) / 2;
+            judgment.y = sourceBottom + sourceJudgmentGap;
+
+            const judgmentBottom = judgment.y + judgmentH;
+            const minOldTargetY = judgmentBottom + verticalGap;
+            if (oldTarget && oldTarget.y < minOldTargetY) {
+              const extraPush = minOldTargetY - oldTarget.y;
+              nodeList.forEach(n => {
+                if (n.y >= oldTarget.y) n.y += extraPush;
+              });
+              oldTarget.y = minOldTargetY;
+            }
 
             const branch = Object.assign({}, branchNode);
             branch.id = utils.getId();
             branch.icon = null;
             branch.width = 120;
-            branch.height = 50
-            branch.nodeName = '普通节点';
-            branch.x = judgment.x + 70 + gap;
-            branch.y = judgment.y + (70 - 50) / 2;
+            branch.height = 50;
+            branch.nodeName = '默认分支';
+            const branchGap = 100; // 默认分支与判断节点的水平间距，偏右以便区分主流程
+            branch.x = judgment.x + judgmentW + branchGap;
+            branch.y = oldTarget ? oldTarget.y : judgment.y + (judgmentH - 50) / 2;
+
+            // 默认分支目标：主流程下一节点有后继则合并到该节点，否则走到结束
+            const oldTargetOutLinks = linkList.filter(l => l.sourceId === oldTargetId);
+            let branchTargetId = null;
+            if (oldTargetOutLinks.length === 1) {
+              const nextNode = nodeList.find(n => n.id === oldTargetOutLinks[0].targetId);
+              if (nextNode && nextNode.type !== CommonNodeType.END) {
+                branchTargetId = oldTargetOutLinks[0].targetId;
+              }
+            }
+            if (!branchTargetId) branchTargetId = endNode ? endNode.id : null;
+
+            const createLink = (sourceId, targetId, anchors) => ({
+              type: 'link',
+              label: '',
+              sourceId,
+              targetId,
+              attrs: {
+                varKey: null,
+                varVal: null,
+                valType: '1',
+                operator: '1',
+                operatorType: '0',
+                isValid: '1',
+                connectorType: 'Straight',
+                stroke: '#2a2929',
+                strokeWidth: 1,
+                ...(Array.isArray(anchors) && { anchors })
+              },
+              id: utils.getId(),
+              icon: null
+            });
 
             const finishAdd = () => {
-              const sourceBottom = sourceNode.y + sourceH;
-              const judgmentBottom = judgment.y + 70;
-              const needY = judgmentBottom + gap;
-
-              if (oldTarget && oldTarget.y < needY) {
-                const pushDown = needY - oldTarget.y;
-                nodeList.forEach(n => {
-                  if (n.id !== judgment.id && n.id !== branch.id && n.y >= oldTarget.y) n.y += pushDown;
-                });
-              }
-
               nodeList.push(judgment);
               nodeList.push(branch);
-              if (endNode && !nodeList.includes(endNode)) nodeList.push(endNode);
+              if (endNode && !nodeList.find(n => n.id === endNode.id)) {
+                nodeList.push(endNode);
+              }
 
+              // 双重 $nextTick 确保新节点已挂载
               this.$nextTick(() => {
-                this.plumb.connect({
-                  source: sourceNode.id,
-                  target: judgment.id,
-                  connector: 'Straight',
-                  anchors: ['Bottom', 'Top']
-                });
-                this.plumb.connect({
-                  source: judgment.id,
-                  target: oldTargetId,
-                  connector: 'Straight',
-                  anchors: ['Bottom', 'Top']
-                });
-                this.plumb.connect({
-                  source: judgment.id,
-                  target: branch.id,
-                  connector: 'Straight',
-                  anchors: ['Right', 'Left']
-                });
-                this.plumb.connect({
-                  source: branch.id,
-                  target: endNode.id,
-                  connector: 'Straight',
-                  anchors: ['Bottom', 'Top']
-                });
+                this.$nextTick(() => {
+                  const statusBackup = this.flowData.status;
+                  this.flowData.status = flowConfig.flowStatus.LOADING;
 
-                linkList.forEach(l => {
-                  if (!l.attrs) l.attrs = {};
-                  if ((l.sourceId === sourceNode.id && l.targetId === judgment.id) ||
-                      (l.sourceId === judgment.id && l.targetId === oldTargetId) ||
-                      (l.sourceId === judgment.id && l.targetId === branch.id) ||
-                      (l.sourceId === branch.id && l.targetId === endNode.id)) {
-                    l.attrs.connectorType = 'Straight';
-                  }
-                });
-                this.$emit('upOrDownNodeJobs', sourceNode.id, judgment.id, true);
-                this.$emit('upOrDownNodeJobs', judgment.id, oldTargetId, true);
-                this.$emit('upOrDownNodeJobs', judgment.id, branch.id, true);
-                this.$emit('upOrDownNodeJobs', branch.id, endNode.id, true);
+                  const connections = [
+                    { sourceId: sourceNode.id, targetId: judgment.id, anchors: ['Bottom', 'Top'] },
+                    { sourceId: judgment.id, targetId: oldTargetId, anchors: ['Bottom', 'Top'] },
+                    { sourceId: judgment.id, targetId: branch.id, anchors: ['Right', 'Left'] },
+                    { sourceId: branch.id, targetId: branchTargetId, anchors: ['Bottom', 'Top'] }
+                  ];
 
-                this.$nextTick(() => this.plumb.repaintEverything());
+                  connections.forEach(({ sourceId, targetId, anchors }) => {
+                    const link = createLink(sourceId, targetId, anchors);
+                    linkList.push(link);
+                    this.plumb.connect({
+                      source: sourceId,
+                      target: targetId,
+                      connector: 'Straight',
+                      anchors,
+                      paintStyle: { stroke: '#2a2929', strokeWidth: 1 }
+                    });
+                  });
+
+                  this.flowData.status = statusBackup;
+
+                  this.$emit('upOrDownNodeJobs', sourceNode.id, judgment.id, true);
+                  this.$emit('upOrDownNodeJobs', judgment.id, oldTargetId, true);
+                  this.$emit('upOrDownNodeJobs', judgment.id, branch.id, true);
+                  this.$emit('upOrDownNodeJobs', branch.id, branchTargetId, true);
+
+                  this.$nextTick(() => {
+                    setTimeout(() => this.plumb.repaintEverything(), 80);
+                  });
+                });
               });
             };
 
-            if (!endNode) {
-              this.$emit("findNodeConfig", "commonNodes", "end", (endNodeConfig) => {
-                if (!endNodeConfig) return;
-                endNode = Object.assign({}, endNodeConfig);
-                endNode.id = utils.getId();
-                endNode.icon = null;
-                endNode.width = 50;
-                endNode.height = 50;
-                const maxY = Math.max(judgment.y + 70, branch.y + 50, ...nodeList.map(n => n.y + (n.height || 50)));
-                endNode.x = branch.x + (120 - 50) / 2;
-                endNode.y = maxY + gap;
+            if (!branchTargetId) {
+              if (!endNode) {
+                this.$emit("findNodeConfig", "commonNodes", "end", (endNodeConfig) => {
+                  if (!endNodeConfig) return;
+                  endNode = Object.assign({}, endNodeConfig);
+                  endNode.id = utils.getId();
+                  endNode.icon = null;
+                  endNode.width = 50;
+                  endNode.height = 50;
+                  const maxY = Math.max(judgment.y + 55, branch.y + 50, ...nodeList.map(n => n.y + (n.height || 50)));
+                  endNode.x = branch.x + (120 - 50) / 2;
+                  endNode.y = maxY + verticalGap;
+                  branchTargetId = endNode.id;
+                  finishAdd();
+                });
+              } else {
+                branchTargetId = endNode.id;
                 finishAdd();
-              });
+              }
             } else {
               finishAdd();
             }
@@ -1118,10 +1165,10 @@
           newNode.x = x - 25;
           newNode.y = y - 25;
         } else if (newNode.type === CommonNodeType.JUDGMENT) {
-          newNode.height = 70;
-          newNode.width = 70;
-          newNode.x = x - 35;
-          newNode.y = y - 35;
+          newNode.height = 55;
+          newNode.width = 100;
+          newNode.x = x - 50;
+          newNode.y = y - 27;
         } else {
           newNode.height = 50;
           newNode.width = 120;

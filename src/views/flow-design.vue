@@ -295,6 +295,27 @@
 
           if (this.flowData.status !== flowConfig.flowStatus.LOADING) {
             this.flowData.linkList.push(o);
+            // 判断节点连线使用 Straight 和计算锚点，避免连线混乱
+            const sourceNode = this.flowData.nodeList.find(n => n.id === o.sourceId);
+            const targetNode = this.flowData.nodeList.find(n => n.id === o.targetId);
+            const hasJudgment = (sourceNode && sourceNode.type === CommonNodeType.JUDGMENT) ||
+              (targetNode && targetNode.type === CommonNodeType.JUDGMENT);
+            if (hasJudgment && sourceNode && targetNode) {
+              const anchors = this.getAnchorsForConnection(sourceNode, targetNode);
+              if (anchors) {
+                const plumbConn = this.plumb.getConnections({ source: o.sourceId, target: o.targetId })[0];
+                if (plumbConn) {
+                  plumbConn.setConnector('Straight');
+                  const srcEp = plumbConn.endpoints && plumbConn.endpoints[0] ? plumbConn.endpoints[0] : plumbConn.source;
+                  const tgtEp = plumbConn.endpoints && plumbConn.endpoints[1] ? plumbConn.endpoints[1] : plumbConn.target;
+                  if (srcEp && typeof srcEp.setAnchor === 'function') srcEp.setAnchor(anchors[0]);
+                  if (tgtEp && typeof tgtEp.setAnchor === 'function') tgtEp.setAnchor(anchors[1]);
+                }
+                if (!o.attrs) o.attrs = {};
+                o.attrs.connectorType = 'Straight';
+                o.attrs.anchors = anchors;
+              }
+            }
             // 增加节点任务数
             this.upOrDownNodeJobs(o.sourceId, o.targetId, true)
           }
@@ -389,6 +410,24 @@
           this.loadFlow();
         }
       },
+      // 根据节点相对位置计算连线锚点，用于判断节点等避免连线错乱
+      getAnchorsForConnection(sourceNode, targetNode) {
+        if (!sourceNode || !targetNode) return null;
+        const sw = sourceNode.width || 120;
+        const sh = sourceNode.height || 50;
+        const tw = targetNode.width || 120;
+        const th = targetNode.height || 50;
+        const sx = sourceNode.x + sw / 2;
+        const sy = sourceNode.y + sh / 2;
+        const tx = targetNode.x + tw / 2;
+        const ty = targetNode.y + th / 2;
+        const dx = tx - sx;
+        const dy = ty - sy;
+        if (Math.abs(dy) >= Math.abs(dx)) {
+          return dy > 0 ? ['Bottom', 'Top'] : ['Top', 'Bottom'];
+        }
+        return dx > 0 ? ['Right', 'Left'] : ['Left', 'Right'];
+      },
       // 渲染流程
       loadFlow(json) {
         this.clear();
@@ -405,19 +444,30 @@
             this.$nextTick(() => {
               linkList.forEach(link => {
                 this.flowData.linkList.push(link);
-                const connectorType = (link.attrs && link.attrs.connectorType) || 'Flowchart';
+                const sourceNode = this.flowData.nodeList.find(n => n.id === link.sourceId);
+                const targetNode = this.flowData.nodeList.find(n => n.id === link.targetId);
+                const hasJudgment = (sourceNode && sourceNode.type === CommonNodeType.JUDGMENT) ||
+                  (targetNode && targetNode.type === CommonNodeType.JUDGMENT);
+                const useStraight = hasJudgment || (link.attrs && link.attrs.connectorType === 'Straight');
+                const connectorType = useStraight ? 'Straight' : ((link.attrs && link.attrs.connectorType) || 'Flowchart');
                 const connector = (connectorType === 'Flowchart' || connectorType === 'StateMachine')
                   ? [connectorType, { gap: 5, cornerRadius: 8, alwaysRespectStubs: true }]
                   : connectorType;
+                const anchors = (link.attrs && link.attrs.anchors) ||
+                  (hasJudgment && this.getAnchorsForConnection(sourceNode, targetNode)) ||
+                  flowConfig.jsPlumbConfig.anchor.default;
                 const paintStyle = {
                   stroke: (link.attrs && link.attrs.stroke) || flowConfig.jsPlumbInsConfig.PaintStyle.stroke,
                   strokeWidth: (link.attrs && link.attrs.strokeWidth != null) ? link.attrs.strokeWidth : flowConfig.jsPlumbInsConfig.PaintStyle.strokeWidth
                 };
+                if (!link.attrs) link.attrs = {};
+                if (useStraight) link.attrs.connectorType = 'Straight';
+                if (Array.isArray(anchors)) link.attrs.anchors = anchors;
                 let conn = this.plumb.connect({
                   source: link.sourceId,
                   target: link.targetId,
                   connector,
-                  anchor: flowConfig.jsPlumbConfig.anchor.default,
+                  anchor: Array.isArray(anchors) ? anchors : flowConfig.jsPlumbConfig.anchor.default,
                   paintStyle
                 });
                 let link_id = conn.canvas.id;
